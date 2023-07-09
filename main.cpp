@@ -33,6 +33,10 @@ int setup_callbacks(void)
     return thid;
 }
 
+int add(int a, int b) {
+    return a + b;
+}
+
 int main(void) 
 {
     // Use above functions to make exiting possible
@@ -43,20 +47,26 @@ int main(void)
 
     using namespace pkpy;
     VM* vm = new VM();
-    
+
+    auto module = vm->new_module("test");
+    vm->bind(module, "add(a: int, b: int) -> int", [](VM* vm, ArgsView args) {
+        i64 lhs = CAST(i64, args[0]);
+        i64 rhs = CAST(i64, args[1]);
+        return VAR(add(lhs, rhs));
+    });
 
     vm->_stdout = [](VM* vm, const Str& s) {
-            PK_UNUSED(vm);
-            pspDebugScreenPrintf("%s\n", s.c_str());
-        };
+        PK_UNUSED(vm);
+        pspDebugScreenPrintf("%s\n", s.c_str());
+    };
+    
     vm->_stderr = [](VM* vm, const Str& s) {
-            PK_UNUSED(vm);
-            pspDebugScreenSetTextColor(0xFF0000FF);
-            pspDebugScreenPrintf("%s\n", s.c_str());
-        };
+        PK_UNUSED(vm);
+        pspDebugScreenSetTextColor(0xFF0000FF);
+        pspDebugScreenPrintf("%s\n", s.c_str());
+    };
 
-    vm->exec("print('Hello world!')", "main.py", EXEC_MODE);
-    vm->exec("eprint('Error Text!')", "main.py", EXEC_MODE);
+    vm->exec("import test\nresult = test.add(2, 3)\nprint(result)", "main.py", EXEC_MODE);
     
     delete vm;
 
